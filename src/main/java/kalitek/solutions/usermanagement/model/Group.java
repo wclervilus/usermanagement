@@ -1,6 +1,7 @@
 package kalitek.solutions.usermanagement.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import kalitek.solutions.common.Auditable;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,9 +11,9 @@ import lombok.ToString;
 @Setter
 @Getter
 @Entity
-@Table(name = "KS_USER")
-public class User extends Auditable implements Identifiable<Long> {
+@Table(name = "KS_GROUP")
+public class Group extends Auditable implements Identifiable<Long> {
+    private Long projectId;
     private String name;
-    private String email;
-    private String hashedPassword;
+    private String labels;
 }
