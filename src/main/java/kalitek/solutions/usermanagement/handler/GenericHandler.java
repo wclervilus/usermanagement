@@ -10,6 +10,7 @@ import kalitek.solutions.usermanagement.service.GenericService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import jakarta.annotation.PostConstruct;
 
 import java.util.Map;
 
@@ -19,6 +20,7 @@ public class GenericHandler<T extends Identifiable<ID>, ID> {
     protected final GenericService<T, ID> service;
     protected final String entityName;
     protected final ParameterizedTypeReference<Request<T>> typeRef;
+    private JavaType requestType;
 
     public GenericHandler(GenericService<T, ID> service,
                           String entityName,
@@ -26,6 +28,11 @@ public class GenericHandler<T extends Identifiable<ID>, ID> {
         this.service = service;
         this.entityName = entityName;
         this.typeRef = typeRef;
+    }
+
+    @PostConstruct
+    private void initRequestType() {
+        this.requestType = mapper.getTypeFactory().constructType(typeRef.getType());
     }
     public APIGatewayProxyResponseEvent handle(APIGatewayProxyRequestEvent request) {
         if (request == null || request.getBody() == null || request.getBody().isEmpty()) {
@@ -35,8 +42,7 @@ public class GenericHandler<T extends Identifiable<ID>, ID> {
         }
         System.err.println(">>> Requête reçue : " + request.getBody());
         try {
-            JavaType type = mapper.getTypeFactory().constructType(typeRef.getType());
-            Request<T> req = mapper.readValue(request.getBody(), type);
+            Request<T> req = mapper.readValue(request.getBody(), requestType);
             System.out.println(">>> Action reçue = " + req.action());
             try {
                 GenericResponse<T> response = handleAction(req.action(), req.data());
