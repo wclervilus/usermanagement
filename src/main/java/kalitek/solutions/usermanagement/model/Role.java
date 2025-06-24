@@ -12,6 +12,9 @@ import lombok.ToString;
 @Entity
 @Table(name = "KS_ROLE")
 public class Role extends Auditable implements Identifiable<Long> {
+    private Long projectId;
     private String name;
+    private Boolean isDefault;
+    private Boolean isInternal;
 }
 

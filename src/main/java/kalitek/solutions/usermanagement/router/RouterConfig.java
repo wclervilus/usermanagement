@@ -4,6 +4,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import kalitek.solutions.usermanagement.handler.GenericHandler;
 import kalitek.solutions.usermanagement.handler.RoleHandler;
 import kalitek.solutions.usermanagement.handler.UserHandler;
+import kalitek.solutions.usermanagement.handler.AuthHandler;
+import kalitek.solutions.usermanagement.handler.ProjectHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -15,8 +17,10 @@ public class RouterConfig {
 
     @Bean
     public RouterFunction<ServerResponse> routes(
-            UserHandler userHandler
-            , RoleHandler roleHandler
+            UserHandler userHandler,
+            RoleHandler roleHandler,
+            ProjectHandler projectHandler,
+            AuthHandler authHandler
             //,GroupHandler groupHandler
             //,PermissionHandler permissionHandler
     ) {
@@ -27,6 +31,12 @@ public class RouterConfig {
               .andRoute(RequestPredicates.POST("/roles")
                       .and(RequestPredicates.accept(MediaType.APPLICATION_JSON)),
                       request -> handleAwsRequest(request, roleHandler))
+              .andRoute(RequestPredicates.POST("/projects")
+                      .and(RequestPredicates.accept(MediaType.APPLICATION_JSON)),
+                      request -> handleAwsRequest(request, projectHandler))
+              .andRoute(RequestPredicates.POST("/auth/login")
+                      .and(RequestPredicates.accept(MediaType.APPLICATION_JSON)),
+                      request -> handleAuthRequest(request, authHandler))
 //              .andRoute(RequestPredicates.POST("/groups")
 //                      .and(RequestPredicates.accept(MediaType.APPLICATION_JSON)),
 //                      request -> handleAwsRequest(request, groupHandler))
@@ -52,6 +62,23 @@ public class RouterConfig {
                     .status(awsResponse.getStatusCode())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(awsResponse.getBody())
+            );
+    }
+
+    private Mono<ServerResponse> handleAuthRequest(ServerRequest request, AuthHandler handler) {
+        return request.bodyToMono(String.class)
+            .map(body -> {
+                var awsRequest = new APIGatewayProxyRequestEvent();
+                awsRequest.setBody(body);
+                awsRequest.setHeaders(request.headers().asHttpHeaders().toSingleValueMap());
+                return awsRequest;
+            })
+            .map(handler::login)
+            .flatMap(awsResponse ->
+                ServerResponse
+                        .status(awsResponse.getStatusCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(awsResponse.getBody())
             );
     }
 }
